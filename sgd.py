@@ -1,4 +1,3 @@
-from sklearn.utils import check_arrays
 import numpy as np
 
 class NewSGD():

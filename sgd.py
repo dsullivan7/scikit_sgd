@@ -43,7 +43,7 @@ class NewSGD():
                 weights -= learning_rate_type * update * X[i]
                
                 #asgd
-                if(self.avg == True):
+                if(self.avg == True and n > 0):
                     total_iter += 1
                     weights += sum_weights
                     weights /= total_iter

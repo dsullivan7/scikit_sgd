@@ -3,9 +3,9 @@ from random import randint
 import numpy as np
 
 def test_something():
-    clf = NewSGD(loss="SquaredLoss",eta0=.000001,n_iter=10)
+    clf = NewSGD(loss="SquaredLoss",eta0=.00000001,n_iter=10)
     x = 5
-    y = 152
+    y = 10000
     arr = np.empty([y,x])
     
     for i in range(y):

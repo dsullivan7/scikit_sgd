@@ -2,6 +2,7 @@ import numpy as np
 
 class NewSGD():
     
+    
     def __init__(self, loss, eta0=.001, n_iter=5):
         self.loss=loss
         self.n_iter = n_iter
@@ -25,18 +26,15 @@ class NewSGD():
         #initialize components needed for weight calculation
         weights = np.zeros(X.shape[1])
         loss_function = self._get_loss_function(loss)
-        learning_rate_type = .0001 
+        learning_rate_type = learning_rate 
         
         #iterate according to the number of iterations specified
         for n in range(n_iter):
             for i in range(X.shape[0]):
                 p = np.dot(X[i],weights)
                 update = loss_function.dloss(p,y[i])
-                for j in range(weights.shape[0]):
-                    weights[j] = weights[j] - (learning_rate_type * update * X[i][j])
+                weights -= learning_rate_type * update * X[i]
         
-        #print(weights)
-
         #set the corresponding private values
         self.coef_ = weights
    

@@ -1,5 +1,6 @@
 import numpy as np
-
+import pdb
+from scipy import linalg
 
 class NewSGD():
 
@@ -30,8 +31,9 @@ class NewSGD():
         learning_rate_type = learning_rate
 
         # components for asgd
-        sum_weights = np.zeros(X.shape[1])
+        avg_weights = np.zeros(X.shape[1])
         total_iter = 0
+        pobj = []
 
         # iterate according to the number of iterations specified
         for n in range(n_iter):
@@ -43,15 +45,21 @@ class NewSGD():
                 weights -= learning_rate_type * update * X[i]
 
                 # asgd
-                if self.avg and n > 0:
+                if self.avg:
+                    #pdb.set_trace()
+                    avg_weights *= total_iter
+                    avg_weights += weights
+                    avg_weights /= (total_iter + 1)
+                    weights = np.copy(avg_weights)
                     total_iter += 1
-                    weights += sum_weights
-                    weights /= total_iter
-                    sum_weights += weights
 
+            loss = 0.5 * linalg.norm(y - np.dot(X, weights)) ** 2
+            print(loss)
+            pobj.append(loss)
+        
         # set the corresponding private values
+        self.pobj_ = pobj
         self.coef_ = weights
-
 
 class SquaredLoss():
     def loss(self, p, y):
@@ -59,3 +67,31 @@ class SquaredLoss():
 
     def dloss(self, p, y):
         return p - y
+
+
+if __name__ == '__main__':
+    rng = np.random.RandomState(42)
+    n_samples, n_features = 100, 10
+
+    X = rng.normal(size=(n_samples, n_features))
+    w = rng.normal(size=(n_features,))
+
+    # Define a ground truth on the scaled data
+    y = np.dot(X, w)
+
+    model = NewSGD('SquaredLoss', eta0=.001, n_iter=40, avg=False)
+    model.fit(X, y)
+
+    avg_model = NewSGD('SquaredLoss', eta0=1., n_iter=40, avg=True)
+    avg_model.fit(X, y)
+
+    import matplotlib.pyplot as plt
+    
+    plt.close('all')
+    plt.plot(model.pobj_, label='SGD')
+    plt.plot(avg_model.pobj_, label='ASGD')
+    plt.xlabel('iter')
+    plt.ylabel('cost')
+    plt.show(block=False)
+    input("<Hit Enter To Close>")
+    plt.close()

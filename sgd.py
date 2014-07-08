@@ -2,6 +2,7 @@ import numpy as np
 import pdb
 from scipy import linalg
 
+
 class NewSGD():
 
     def __init__(self, loss, eta0=.001, n_iter=5, avg=False):
@@ -46,7 +47,7 @@ class NewSGD():
 
                 # asgd
                 if self.avg:
-                    #pdb.set_trace()
+                    # pdb.set_trace()
                     avg_weights *= total_iter
                     avg_weights += weights
                     avg_weights /= (total_iter + 1)
@@ -56,10 +57,11 @@ class NewSGD():
             loss = 0.5 * linalg.norm(y - np.dot(X, weights)) ** 2
             print(loss)
             pobj.append(loss)
-        
+
         # set the corresponding private values
         self.pobj_ = pobj
         self.coef_ = weights
+
 
 class SquaredLoss():
     def loss(self, p, y):
@@ -86,7 +88,7 @@ if __name__ == '__main__':
     avg_model.fit(X, y)
 
     import matplotlib.pyplot as plt
-    
+
     plt.close('all')
     plt.plot(model.pobj_, label='SGD')
     plt.plot(avg_model.pobj_, label='ASGD')

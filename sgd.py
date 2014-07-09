@@ -23,7 +23,9 @@ class NewSGD():
         return self
 
     def _get_loss_function(self, loss):
-        return SquaredLoss()
+        return {"SquaredLoss": SquaredLoss,
+                "Hinge": Hinge
+                }[loss]()
 
     def _fit_regressor(self, X, y, loss, learning_rate, n_iter):
         # initialize components needed for weight calculation
@@ -62,6 +64,19 @@ class NewSGD():
         self.coef_ = weights
 
 
+class Hinge():
+    def __init__(self, threshold=1.0):
+        self.threshold = threshold
+
+    def loss(self, p, y):
+        z = p * y
+        return self.threshold - z if z <= threshold else return 0
+
+    def dloss(self, p, y):
+        z = p * y
+        return -y if z <= threshold else return 0
+
+
 class SquaredLoss():
     def loss(self, p, y):
         return .5 * (p - y) * (p - y)
@@ -73,7 +88,8 @@ class SquaredLoss():
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import naive_asgd
-    
+    import experimental_asgd
+
     rng = np.random.RandomState(42)
     n_samples, n_features = 1000, 10
 
@@ -85,22 +101,26 @@ if __name__ == '__main__':
 
     iterations = 5
 
-    model = NewSGD('SquaredLoss', eta0=.01, n_iter=iterations, avg=False)
+    model = NewSGD('Hinge', eta0=.01, n_iter=iterations, avg=False)
     model.fit(X, y)
 
-    avg_model = NewSGD('SquaredLoss', eta0=1., n_iter=iterations, avg=True)
+    avg_model = NewSGD('Hinge', eta0=1., n_iter=iterations, avg=True)
     avg_model.fit(X, y)
 
-    npinto_model = naive_asgd.NaiveBinaryASGD(n_features, n_iterations=iterations)
-    npinto_model.fit(X,y)
+    npinto_model = naive_asgd.NaiveBinaryASGD(n_features,
+                                              sgd_step_size0=.01,
+                                              n_iterations=iterations)
+    npinto_model.fit(X, y)
+
+    npinto_model2 = experimental_asgd.ExperimentalBinaryASGD(n_features)
+    npinto_model2.fit(X, y)
 
     plt.close('all')
     plt.plot(np.log10(model.pobj_), label='SGD')
     plt.plot(np.log10(avg_model.pobj_), label='ASGD')
     plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
+    plt.plot(np.log10(npinto_model2.pobj_), label='NPINTO2')
     plt.xlabel('iter')
     plt.ylabel('cost')
     plt.legend()
     plt.show()
-    #input("<Hit Enter To Close>")
-    #plt.close()

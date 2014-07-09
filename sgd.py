@@ -54,9 +54,8 @@ class NewSGD():
                     weights = np.copy(avg_weights)
                     total_iter += 1
 
-            loss = 0.5 * linalg.norm(y - np.dot(X, weights)) ** 2
-            print(loss)
-            pobj.append(loss)
+                loss = 0.5 * linalg.norm(y - np.dot(X, weights)) ** 2
+                pobj.append(loss)
 
         # set the corresponding private values
         self.pobj_ = pobj
@@ -72,8 +71,11 @@ class SquaredLoss():
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import naive_asgd
+    
     rng = np.random.RandomState(42)
-    n_samples, n_features = 100, 10
+    n_samples, n_features = 1000, 10
 
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=(n_features,))
@@ -81,19 +83,24 @@ if __name__ == '__main__':
     # Define a ground truth on the scaled data
     y = np.dot(X, w)
 
-    model = NewSGD('SquaredLoss', eta0=.001, n_iter=40, avg=False)
+    iterations = 5
+
+    model = NewSGD('SquaredLoss', eta0=.01, n_iter=iterations, avg=False)
     model.fit(X, y)
 
-    avg_model = NewSGD('SquaredLoss', eta0=1., n_iter=40, avg=True)
+    avg_model = NewSGD('SquaredLoss', eta0=1., n_iter=iterations, avg=True)
     avg_model.fit(X, y)
 
-    import matplotlib.pyplot as plt
+    npinto_model = naive_asgd.NaiveBinaryASGD(n_features, n_iterations=iterations)
+    npinto_model.fit(X,y)
 
     plt.close('all')
-    plt.plot(model.pobj_, label='SGD')
-    plt.plot(avg_model.pobj_, label='ASGD')
+    plt.plot(np.log10(model.pobj_), label='SGD')
+    plt.plot(np.log10(avg_model.pobj_), label='ASGD')
+    plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
     plt.xlabel('iter')
     plt.ylabel('cost')
-    plt.show(block=False)
-    input("<Hit Enter To Close>")
-    plt.close()
+    plt.legend()
+    plt.show()
+    #input("<Hit Enter To Close>")
+    #plt.close()

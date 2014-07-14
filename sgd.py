@@ -22,22 +22,49 @@ class NewSGD():
                          self.eta0,
                          self.n_iter)
 
-    def _fit(self, X, y, loss, learning_rate, n_iter):
-        self._fit_regressor(X, y, loss, learning_rate, n_iter)
-        return self
+    def partial_fit(self, X, y):
+        return self._partial_fit(X,
+                                 y,
+                                 self.loss,
+                                 self.eta0,
+                                 self.n_iter)
 
-    def _fit_regressor(self, X, y, loss, learning_rate, n_iter):
+    def _fit(self, X, y, loss, learning_rate, n_iter):
         # initialize components needed for weight calculation
-        weights = np.zeros(X.shape[1])
-        loss_function = loss_functions.get_loss_function(loss)
-        total_iter = 0
-        pobj = []
+        self.coef_ = np.zeros(X.shape[1])
+        self.total_iter_ = 0
+        self.pobj_ = []
 
         # components for asgd
-        avg_weights = np.zeros(X.shape[1])
+        if self.avg:
+            self.coef_avg_ = np.zeros(X.shape[1])
+        
+        return self._partial_fit(X, y, loss, learning_rate, n_iter)
+
+    def _partial_fit(self, X, y, loss, learning_rate, n_iter):
+        # set all class variables
+        if not hasattr(self, "pobj_"):
+            self.pobj_ = []
+        if not hasattr(self, "coef_"):
+            self.coef_ = np.zeros(X.shape[1])
+        if not hasattr(self, "coef_avg_") and self.avg:
+            self.coef_avg_ = np.zeros(X.shape[1])
+        if not hasattr(self, "total_iter_"):
+            self.total_iter_ = 0
+
+        # initialize components needed for weight calculation
+        weights = np.copy(self.coef_)
+        loss_function = loss_functions.get_loss_function(loss)
+        total_iter = self.total_iter_
+        pobj = [] # stores total loss for each iteration
+
+        # components for asgd
+        if self.avg:
+            avg_weights = self.coef_avg_
 
         # iterate according to the number of iterations specified
         for n in range(n_iter):
+            # iterate over each entry point in the training set
             for i in range(X.shape[0]):
                 total_iter += 1
 
@@ -46,7 +73,7 @@ class NewSGD():
                 update = loss_function.dloss(p, y[i])
                 weights -= learning_rate * update * X[i]
 
-                # asgd
+                # averaged sgd
                 if self.avg:
                     avg_weights *= total_iter - 1
                     avg_weights += weights
@@ -60,12 +87,13 @@ class NewSGD():
                 pobj.append(sum(map(loss_function.loss, p, y)))
 
         # set the corresponding private values
-        self.pobj_ = pobj
+        self.total_iter_ = total_iter
+        self.pobj_ += pobj
+        self.coef_ = weights
         if self.avg:
-            self.coef_ = avg_weights
-        else:
-            self.coef_ = weights
+            self.coef_avg_ = avg_weights
 
+        return self
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -97,10 +125,10 @@ if __name__ == '__main__':
                               header=None))
     """
 
-    model = NewSGD('Hinge', eta0=.01, n_iter=iterations, avg=False)
+    model = NewSGD('hinge', eta0=.01, n_iter=iterations, avg=False)
     model.fit(X, y)
 
-    avg_model = NewSGD('Hinge', eta0=.1, n_iter=iterations, avg=True)
+    avg_model = NewSGD('hinge', eta0=.1, n_iter=iterations, avg=True)
     avg_model.fit(X, y)
 
     """

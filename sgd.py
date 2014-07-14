@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import loss_functions
 from scipy import linalg
 
 # remove after debugging
@@ -25,16 +26,10 @@ class NewSGD():
         self._fit_regressor(X, y, loss, learning_rate, n_iter)
         return self
 
-    def _get_loss_function(self, loss):
-        return {"SquaredLoss": SquaredLoss,
-                "Hinge": Hinge,
-                "Log": Log
-                }[loss]()
-
     def _fit_regressor(self, X, y, loss, learning_rate, n_iter):
         # initialize components needed for weight calculation
         weights = np.zeros(X.shape[1])
-        loss_function = self._get_loss_function(loss)
+        loss_function = loss_functions.get_loss_function(loss)
         learning_rate_type = learning_rate
 
         # components for asgd
@@ -75,54 +70,16 @@ class NewSGD():
             self.coef_ = weights
 
 
-class Hinge():
-    def __init__(self, threshold=1.0):
-        self.threshold = threshold
-
-    def loss(self, p, y):
-        z = p * y
-        if z <= self.threshold:
-            return self.threshold - z
-        else:
-            return 0
-
-    def dloss(self, p, y):
-        z = p * y
-        if z <= self.threshold:
-            return -y
-        else:
-            return 0
-
-
-class SquaredLoss():
-    def loss(self, p, y):
-        return .5 * (p - y) ** 2
-
-    def dloss(self, p, y):
-        return p - y
-
-
-class Log():
-
-    def loss(self, p, y):
-        z = p * y
-        return math.log(1 + math.exp(-z))
-
-    def dloss(self, p, y):
-        z = p * y
-        return -y / (math.exp(z) + 1.0)
-
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import pandas as p
     import naive_asgd
 
-    iterations = 2
+    iterations = 1
 
     # """
     rng = np.random.RandomState(42)
-    n_samples, n_features = 5000, 10
+    n_samples, n_features = 500, 5
 
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=(n_features,))

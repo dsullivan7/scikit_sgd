@@ -117,7 +117,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import pandas as p
     import naive_asgd
-    import experimental_asgd
 
     iterations = 2
 
@@ -159,14 +158,11 @@ if __name__ == '__main__':
     """
     # npinto_model.fit(np.array(X), np.array(y))
 
-    # npinto_model2 = experimental_asgd.ExperimentalBinaryASGD(n_features)
-    # npinto_model2.fit(X, y)
 
     plt.close('all')
     plt.plot(np.log10(model.pobj_), label='SGD')
     plt.plot(np.log10(avg_model.pobj_), label='ASGD')
     # plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
-    # plt.plot(np.log10(npinto_model2.pobj_), label='NPINTO2')
     plt.xlabel('iter')
     plt.ylabel('cost')
     plt.legend()

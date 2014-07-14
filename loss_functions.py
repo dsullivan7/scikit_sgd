@@ -4,6 +4,7 @@ def get_loss_function(loss):
             "Log": Log
             }[loss]()
 
+
 class Hinge():
     def __init__(self, threshold=1.0):
         self.threshold = threshold

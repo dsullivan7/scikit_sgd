@@ -30,21 +30,21 @@ class NewSGD():
         # initialize components needed for weight calculation
         weights = np.zeros(X.shape[1])
         loss_function = loss_functions.get_loss_function(loss)
-        learning_rate_type = learning_rate
+        total_iter = 0
+        pobj = []
 
         # components for asgd
-        total_iter = 0
         avg_weights = np.zeros(X.shape[1])
-        pobj = []
 
         # iterate according to the number of iterations specified
         for n in range(n_iter):
             for i in range(X.shape[0]):
                 total_iter += 1
+
                 # base sgd code
                 p = np.dot(X[i], weights)
                 update = loss_function.dloss(p, y[i])
-                weights -= learning_rate_type * update * X[i]
+                weights -= learning_rate * update * X[i]
 
                 # asgd
                 if self.avg:
@@ -54,13 +54,10 @@ class NewSGD():
 
                 # loss calculation
                 if self.avg:
-                    pobj.append(sum(map(loss_function.loss,
-                                        np.dot(X, avg_weights),
-                                        y)))
+                    p = np.dot(X, avg_weights)
                 else:
-                    pobj.append(sum(map(loss_function.loss,
-                                        np.dot(X, weights),
-                                        y)))
+                    p = np.dot(X, weights)
+                pobj.append(sum(map(loss_function.loss, p, y)))
 
         # set the corresponding private values
         self.pobj_ = pobj
@@ -85,10 +82,8 @@ if __name__ == '__main__':
     w = rng.normal(size=(n_features,))
 
     # Define a ground truth on the scaled data
-    def svm(x):
-        return 1 if x > 1 else -1
     y = np.dot(X, w)
-    y = map(svm, y)
+    y = np.sign(y)
     # """
 
     """
@@ -114,7 +109,6 @@ if __name__ == '__main__':
                                               n_iterations=iterations)
     """
     # npinto_model.fit(np.array(X), np.array(y))
-
 
     plt.close('all')
     plt.plot(np.log10(model.pobj_), label='SGD')

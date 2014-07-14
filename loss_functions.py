@@ -1,8 +1,8 @@
 def get_loss_function(loss):
-    return {"SquaredLoss": SquaredLoss,
-            "Hinge": Hinge,
-            "Log": Log
-            }[loss]()
+    return {"squaredloss": SquaredLoss,
+            "hinge": Hinge,
+            "log": Log
+            }[loss.lower()]()
 
 
 class Hinge():

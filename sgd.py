@@ -78,13 +78,18 @@ class NewSGD():
                     avg_weights *= total_iter - 1
                     avg_weights += weights
                     avg_weights /= total_iter
-
+        
+                #update learning rate
+                if not self.avg:
+                    learning_rate = (1. + .02 * total_iter) ** (-2./3.)
+                    
                 # loss calculation
                 if self.avg:
                     p = np.dot(X, avg_weights)
                 else:
                     p = np.dot(X, weights)
-                pobj.append(sum(map(loss_function.loss, p, y)))
+                if total_iter % 1000 == 0:
+                    pobj.append(sum(map(loss_function.loss, p, y)))
 
         # set the corresponding private values
         self.total_iter_ = total_iter
@@ -100,11 +105,11 @@ if __name__ == '__main__':
     import pandas as p
     import naive_asgd
 
-    iterations = 1
+    iterations = 2 
 
     # """
     rng = np.random.RandomState(42)
-    n_samples, n_features = 500, 5
+    n_samples, n_features = 10000, 50
 
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=(n_features,))
@@ -124,12 +129,20 @@ if __name__ == '__main__':
                               nrows=nrows,
                               header=None))
     """
+    chunks = 1
+    chunk = n_samples / chunks
 
     model = NewSGD('hinge', eta0=.01, n_iter=iterations, avg=False)
-    model.fit(X, y)
+    for i in range(chunks):
+        print(i)
+        model.partial_fit(X[chunk*i:chunk*i+chunk][:], 
+                      y[chunk*i:chunk*i + chunk])
 
-    avg_model = NewSGD('hinge', eta0=.1, n_iter=iterations, avg=True)
-    avg_model.fit(X, y)
+    avg_model = NewSGD('hinge', eta0=1., n_iter=iterations, avg=True)
+    for i in range(chunks):
+        print(i)
+        avg_model.partial_fit(X[chunk*i:chunk*i+chunk][:], 
+                      y[chunk*i:chunk*i + chunk])
 
     """
     npinto_model = naive_asgd.NaiveBinaryASGD(n_features,

@@ -1,5 +1,6 @@
 import numpy as np
 import loss_functions
+import learning_rates
 
 # remove after debugging
 # import pdb
@@ -7,17 +8,25 @@ import loss_functions
 
 class NewSGD():
 
-    def __init__(self, loss, eta0=.001, n_iter=5, avg=False):
+    def __init__(self,
+                 loss,
+                 eta0=.001,
+                 learning_rate_type="static",
+                 n_iter=5,
+                 avg=False):
         self.loss = loss
         self.n_iter = n_iter
         self.eta0 = eta0
         self.avg = avg
+        self.learning_rate = \
+            learning_rates.get_learning_rate(learning_rate_type, eta0)
 
     def fit(self, X, y):
         return self._fit(X,
                          y,
                          self.loss,
                          self.eta0,
+                         self.learning_rate,
                          self.n_iter)
 
     def partial_fit(self, X, y):
@@ -25,9 +34,10 @@ class NewSGD():
                                  y,
                                  self.loss,
                                  self.eta0,
+                                 self.learning_rate,
                                  self.n_iter)
 
-    def _fit(self, X, y, loss, learning_rate, n_iter):
+    def _fit(self, X, y, loss, eta0, learning_rate, n_iter):
         # initialize components needed for weight calculation
         self.coef_ = np.zeros(X.shape[1])
         self.total_iter_ = 0
@@ -37,9 +47,9 @@ class NewSGD():
         if self.avg:
             self.coef_avg_ = np.zeros(X.shape[1])
 
-        return self._partial_fit(X, y, loss, learning_rate, n_iter)
+        return self._partial_fit(X, y, loss, eta0, learning_rate, n_iter)
 
-    def _partial_fit(self, X, y, loss, learning_rate, n_iter):
+    def _partial_fit(self, X, y, loss, eta0, learning_rate, n_iter):
         # set all class variables
         if not hasattr(self, "pobj_"):
             self.pobj_ = []
@@ -55,6 +65,7 @@ class NewSGD():
         loss_function = loss_functions.get_loss_function(loss)
         total_iter = self.total_iter_
         pobj = []  # stores total loss for each iteration
+        step = self.learning_rate.step(total_iter)
 
         # components for asgd
         if self.avg:
@@ -69,7 +80,7 @@ class NewSGD():
                 # base sgd code
                 p = np.dot(X[i], weights)
                 update = loss_function.dloss(p, y[i])
-                weights -= learning_rate * update * X[i]
+                weights -= step * update * X[i]
 
                 # averaged sgd
                 if self.avg:
@@ -78,8 +89,7 @@ class NewSGD():
                     avg_weights /= total_iter
 
                 # update learning rate
-                if not self.avg:
-                    learning_rate = (1. + .02 * total_iter) ** (-2. / 3.)
+                step = self.learning_rate.step(total_iter)
 
                 # loss calculation
                 if self.avg:
@@ -105,7 +115,7 @@ if __name__ == '__main__':
 
     # """
     rng = np.random.RandomState(42)
-    n_samples, n_features = 10000, 50
+    n_samples, n_features = 10000, 100
 
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=(n_features,))
@@ -129,11 +139,19 @@ if __name__ == '__main__':
     x_chunks = np.array_split(X, chunks)
     y_chunks = np.array_split(y, chunks)
 
-    model = NewSGD('hinge', eta0=.01, n_iter=iterations, avg=False)
+    model = NewSGD('hinge',
+                   learning_rate_type='exponential',
+                   eta0=.01,
+                   n_iter=iterations,
+                   avg=False)
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         model.partial_fit(x_chunk, y_chunk)
 
-    avg_model = NewSGD('hinge', eta0=1., n_iter=iterations, avg=True)
+    avg_model = NewSGD('hinge',
+                       eta0=1.,
+                       learning_rate_type='static',
+                       n_iter=iterations,
+                       avg=True)
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         avg_model.partial_fit(x_chunk, y_chunk)
 

@@ -1,10 +1,8 @@
 import numpy as np
-import math
 import loss_functions
-from scipy import linalg
 
 # remove after debugging
-import pdb
+# import pdb
 
 
 class NewSGD():
@@ -102,8 +100,6 @@ class NewSGD():
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    import pandas as p
-    import naive_asgd
 
     iterations = 2
 

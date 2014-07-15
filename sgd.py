@@ -126,19 +126,16 @@ if __name__ == '__main__':
                               header=None))
     """
     chunks = 1
-    chunk = n_samples / chunks
+    x_chunks = np.array_split(X, chunks)
+    y_chunks = np.array_split(y, chunks)
 
     model = NewSGD('hinge', eta0=.01, n_iter=iterations, avg=False)
-    for i in range(chunks):
-        print(i)
-        model.partial_fit(X[chunk * i:chunk * i + chunk][:],
-                          y[chunk * i:chunk * i + chunk])
+    for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+        model.partial_fit(x_chunk, y_chunk)
 
     avg_model = NewSGD('hinge', eta0=1., n_iter=iterations, avg=True)
-    for i in range(chunks):
-        print(i)
-        avg_model.partial_fit(X[chunk * i:chunk * i + chunk][:],
-                              y[chunk * i:chunk * i + chunk])
+    for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+        avg_model.partial_fit(x_chunk, y_chunk)
 
     """
     npinto_model = naive_asgd.NaiveBinaryASGD(n_features,

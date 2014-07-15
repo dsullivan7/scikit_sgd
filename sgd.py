@@ -65,7 +65,6 @@ class NewSGD():
         loss_function = loss_functions.get_loss_function(loss)
         total_iter = self.total_iter_
         pobj = []  # stores total loss for each iteration
-        step = self.learning_rate.step(total_iter)
 
         # components for asgd
         if self.avg:
@@ -80,6 +79,8 @@ class NewSGD():
                 # base sgd code
                 p = np.dot(X[i], weights)
                 update = loss_function.dloss(p, y[i])
+                step = self.learning_rate.step(num_iter=total_iter,
+                                               gradient=update)
                 weights -= step * update * X[i]
 
                 # averaged sgd
@@ -87,9 +88,6 @@ class NewSGD():
                     avg_weights *= total_iter - 1
                     avg_weights += weights
                     avg_weights /= total_iter
-
-                # update learning rate
-                step = self.learning_rate.step(total_iter)
 
                 # loss calculation
                 if self.avg:
@@ -115,10 +113,10 @@ if __name__ == '__main__':
 
     # """
     rng = np.random.RandomState(42)
-    n_samples, n_features = 10000, 100
+    n_samples, n_features = 10000, 10
 
     X = rng.normal(size=(n_samples, n_features))
-    w = rng.normal(size=(n_features,))
+    w = rng.normal(size=n_features)
 
     # Define a ground truth on the scaled data
     y = np.dot(X, w)
@@ -152,9 +150,18 @@ if __name__ == '__main__':
                        learning_rate_type='static',
                        n_iter=iterations,
                        avg=True)
+
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         avg_model.partial_fit(x_chunk, y_chunk)
 
+    adagrad_model = NewSGD('hinge',
+                           eta0=10.,
+                           learning_rate_type='adagrad',
+                           n_iter=iterations,
+                           avg=True)
+
+    for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+        adagrad_model.partial_fit(x_chunk, y_chunk)
     """
     npinto_model = naive_asgd.NaiveBinaryASGD(n_features,
                                               sgd_step_size0=.01,
@@ -165,6 +172,7 @@ if __name__ == '__main__':
     plt.close('all')
     plt.plot(np.log10(model.pobj_), label='SGD')
     plt.plot(np.log10(avg_model.pobj_), label='ASGD')
+    plt.plot(np.log10(adagrad_model.pobj_), label='ADAGRAD')
     # plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
     plt.xlabel('iter')
     plt.ylabel('cost')

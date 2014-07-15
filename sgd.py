@@ -38,7 +38,7 @@ class NewSGD():
         # components for asgd
         if self.avg:
             self.coef_avg_ = np.zeros(X.shape[1])
-        
+
         return self._partial_fit(X, y, loss, learning_rate, n_iter)
 
     def _partial_fit(self, X, y, loss, learning_rate, n_iter):
@@ -56,7 +56,7 @@ class NewSGD():
         weights = np.copy(self.coef_)
         loss_function = loss_functions.get_loss_function(loss)
         total_iter = self.total_iter_
-        pobj = [] # stores total loss for each iteration
+        pobj = []  # stores total loss for each iteration
 
         # components for asgd
         if self.avg:
@@ -78,11 +78,11 @@ class NewSGD():
                     avg_weights *= total_iter - 1
                     avg_weights += weights
                     avg_weights /= total_iter
-        
-                #update learning rate
+
+                # update learning rate
                 if not self.avg:
-                    learning_rate = (1. + .02 * total_iter) ** (-2./3.)
-                    
+                    learning_rate = (1. + .02 * total_iter) ** (-2. / 3.)
+
                 # loss calculation
                 if self.avg:
                     p = np.dot(X, avg_weights)
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     import pandas as p
     import naive_asgd
 
-    iterations = 2 
+    iterations = 2
 
     # """
     rng = np.random.RandomState(42)
@@ -135,14 +135,14 @@ if __name__ == '__main__':
     model = NewSGD('hinge', eta0=.01, n_iter=iterations, avg=False)
     for i in range(chunks):
         print(i)
-        model.partial_fit(X[chunk*i:chunk*i+chunk][:], 
-                      y[chunk*i:chunk*i + chunk])
+        model.partial_fit(X[chunk * i:chunk * i + chunk][:],
+                          y[chunk * i:chunk * i + chunk])
 
     avg_model = NewSGD('hinge', eta0=1., n_iter=iterations, avg=True)
     for i in range(chunks):
         print(i)
-        avg_model.partial_fit(X[chunk*i:chunk*i+chunk][:], 
-                      y[chunk*i:chunk*i + chunk])
+        avg_model.partial_fit(X[chunk * i:chunk * i + chunk][:],
+                              y[chunk * i:chunk * i + chunk])
 
     """
     npinto_model = naive_asgd.NaiveBinaryASGD(n_features,

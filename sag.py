@@ -39,12 +39,14 @@ def newton_logistic(X, y, alpha=1.):
 
 class SAG(BaseEstimator):
 
-    def __init__(self, loss, step_size=.001, n_iter=5, alpha=1., random_state=None):
+    def __init__(self, loss, step_size=.001, n_iter=5, alpha=1., random_state=None,
+                 callback=None):
         self.loss = loss
         self.n_iter = n_iter
         self.step_size = step_size
         self.alpha = alpha
         self.random_state = random_state
+        self.callback = callback
 
     def fit(self, X, y):
         X = np.asarray(X, dtype=np.float)
@@ -78,10 +80,13 @@ class SAG(BaseEstimator):
 
             w -= (scaling / min(i + 1, n_samples)) *  grad
 
-            if (i % 100) == 0:
-                pobj_i = np.mean(map(loss_function.loss, np.dot(X, w), y))
-                pobj_i += alpha * np.dot(w, w) / 2.
-                pobj.append(pobj_i)
+            if (i % 1000) == 0:
+                if self.callback:
+                    pobj.append(self.callback(w, alpha))
+                else:
+                    pobj_i = np.mean(map(loss_function.loss, np.dot(X, w), y))
+                    pobj_i += alpha * np.dot(w, w) / 2.
+                    pobj.append(pobj_i)
 
         # set the corresponding private values
         self.pobj_ = pobj
@@ -106,8 +111,8 @@ if __name__ == '__main__':
 
     y[y == 0] = -1
 
-    alpha = .1
-    # alpha = 1.
+    # alpha = .1
+    alpha = 1.
 
     loss, step_size = 'squaredloss', 1.
     # loss, step_size = 'log', 4.

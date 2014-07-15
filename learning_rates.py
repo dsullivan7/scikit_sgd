@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import numpy as np
 
 
 def get_learning_rate(learning_rate_type, eta0=.01):
@@ -36,4 +37,4 @@ class AdaGrad(BaseLearningRate):
 
     def step(self, gradient, num_iter=None):
         self.sum_squared_grad += gradient ** 2
-        return self.eta0 / (self.sum_squared_grad ** (1./2.))
+        return self.eta0 / np.sqrt(self.sum_squared_grad)

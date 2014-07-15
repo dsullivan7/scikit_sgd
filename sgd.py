@@ -13,13 +13,17 @@ class NewSGD():
                  eta0=.001,
                  learning_rate_type="static",
                  n_iter=5,
-                 avg=False):
+                 avg=False,
+                 callback=None,
+                 alpha=0.):
         self.loss = loss
         self.n_iter = n_iter
         self.eta0 = eta0
         self.avg = avg
         self.learning_rate = \
             learning_rates.get_learning_rate(learning_rate_type, eta0)
+        self.callback = callback
+        self.alpha = alpha
 
     def fit(self, X, y):
         return self._fit(X,
@@ -65,6 +69,7 @@ class NewSGD():
         loss_function = loss_functions.get_loss_function(loss)
         total_iter = self.total_iter_
         pobj = []  # stores total loss for each iteration
+        alpha = self.alpha
 
         # components for asgd
         if self.avg:
@@ -72,16 +77,20 @@ class NewSGD():
 
         # iterate according to the number of iterations specified
         for n in range(n_iter):
+            # if n == 1 and self.avg:
+            #     total_iter = 0
+            #     avg_weights.fill(0.)  # hack to reset averaging after one epoch
+
             # iterate over each entry point in the training set
             for i in range(X.shape[0]):
                 total_iter += 1
 
                 # base sgd code
                 p = np.dot(X[i], weights)
-                update = loss_function.dloss(p, y[i])
+                gradient = loss_function.dloss(p, y[i]) * X[i] + alpha * weights
                 step = self.learning_rate.step(num_iter=total_iter,
-                                               gradient=update)
-                weights -= step * update * X[i]
+                                               gradient=gradient)
+                weights -= step * gradient
 
                 # averaged sgd
                 if self.avg:
@@ -90,12 +99,11 @@ class NewSGD():
                     avg_weights /= total_iter
 
                 # loss calculation
-                if self.avg:
-                    p = np.dot(X, avg_weights)
-                else:
-                    p = np.dot(X, weights)
                 if total_iter % 1000 == 0:
-                    pobj.append(sum(map(loss_function.loss, p, y)))
+                    if self.avg:
+                        pobj.append(self.callback(avg_weights, alpha))
+                    else:
+                        pobj.append(self.callback(weights, alpha))
 
         # set the corresponding private values
         self.total_iter_ = total_iter
@@ -109,9 +117,9 @@ class NewSGD():
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    iterations = 2
+    n_iter = 500
 
-    # """
+    """
     rng = np.random.RandomState(42)
     n_samples, n_features = 10000, 10
 
@@ -121,7 +129,19 @@ if __name__ == '__main__':
     # Define a ground truth on the scaled data
     y = np.dot(X, w)
     y = np.sign(y)
-    # """
+    """
+
+    from sklearn import datasets
+
+    iris = datasets.load_iris()
+    X = iris.data
+    y = iris.target
+
+    # Make it binary
+    X = X[y < 2]
+    y = y[y < 2]
+
+    y[y == 0] = -1
 
     """
     nrows = 100000
@@ -137,31 +157,54 @@ if __name__ == '__main__':
     x_chunks = np.array_split(X, chunks)
     y_chunks = np.array_split(y, chunks)
 
-    model = NewSGD('hinge',
+    loss = 'hinge'
+    loss = 'log'
+
+    # alpha = 1.
+    alpha = 1e-2
+
+    def callback(coef, alpha=0.):
+        loss_function = loss_functions.get_loss_function(loss)
+        pobj = np.mean(map(loss_function.loss, np.dot(X, coef), y))
+        pobj += alpha * np.dot(coef, coef) / 2.
+        return pobj
+
+    model = NewSGD(loss,
                    learning_rate_type='exponential',
                    eta0=.01,
-                   n_iter=iterations,
-                   avg=False)
+                   n_iter=n_iter,
+                   avg=False,
+                   alpha=alpha,
+                   callback=callback)
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         model.partial_fit(x_chunk, y_chunk)
 
-    avg_model = NewSGD('hinge',
-                       eta0=1.,
+    avg_model = NewSGD(loss,
+                       eta0=0.1,
                        learning_rate_type='static',
-                       n_iter=iterations,
-                       avg=True)
+                       n_iter=n_iter,
+                       avg=True,
+                       alpha=alpha,
+                       callback=callback)
 
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         avg_model.partial_fit(x_chunk, y_chunk)
 
-    adagrad_model = NewSGD('hinge',
-                           eta0=10.,
+    adagrad_model = NewSGD(loss,
+                           eta0=.1,
                            learning_rate_type='adagrad',
-                           n_iter=iterations,
-                           avg=True)
+                           n_iter=n_iter,
+                           avg=False,
+                           alpha=alpha,
+                           callback=callback)
 
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         adagrad_model.partial_fit(x_chunk, y_chunk)
+
+    from sag import SAG
+    sag_model = SAG(loss, step_size=4., alpha=alpha, n_iter=n_iter, callback=callback)
+    sag_model.fit(X, y)
+
     """
     npinto_model = naive_asgd.NaiveBinaryASGD(n_features,
                                               sgd_step_size0=.01,
@@ -169,10 +212,31 @@ if __name__ == '__main__':
     """
     # npinto_model.fit(np.array(X), np.array(y))
 
+    if loss == 'log':
+        from sklearn.linear_model import LogisticRegression
+        # w_opt, pobj_opt = newton_logistic(X, y, alpha=alpha)
+        loss_function = loss_functions.get_loss_function(loss)
+        lr = LogisticRegression(fit_intercept=False, tol=1e-9, C=1./(alpha * X.shape[0]))
+        w_opt = lr.fit(X, y).coef_.ravel()
+        pobj_opt = np.mean(map(loss_function.loss, np.dot(X, w_opt), y))
+        pobj_opt += alpha * np.dot(w_opt, w_opt) / 2.
+
     plt.close('all')
-    plt.plot(np.log10(model.pobj_), label='SGD')
-    plt.plot(np.log10(avg_model.pobj_), label='ASGD')
-    plt.plot(np.log10(adagrad_model.pobj_), label='ADAGRAD')
+    plt.plot(model.pobj_, label='SGD')
+    plt.plot(avg_model.pobj_, label='ASGD')
+    plt.plot(adagrad_model.pobj_, label='ADAGRAD')
+    plt.plot(sag_model.pobj_, label='SAG')
+    plt.axhline(pobj_opt, label='OPT', linestyle='--', color='k')
+    plt.xlabel('iter')
+    plt.ylabel('cost')
+    plt.legend()
+
+    plt.figure()
+    plt.plot(np.log10(model.pobj_ - pobj_opt), label='SGD')
+    plt.plot(np.log10(avg_model.pobj_ - pobj_opt), label='ASGD')
+    plt.plot(np.log10(adagrad_model.pobj_ - pobj_opt), label='ADAGRAD')
+    plt.plot(np.log10(sag_model.pobj_ - pobj_opt), label='SAG')
+    # plt.axhline(np.log10(pobj_opt), label='OPT', linestyle='--', color='k')
     # plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
     plt.xlabel('iter')
     plt.ylabel('cost')

@@ -1,3 +1,7 @@
+from abc import ABCMeta, abstractmethod
+import math
+
+
 def get_loss_function(loss):
     return {"squaredloss": SquaredLoss,
             "hinge": Hinge,
@@ -5,7 +9,19 @@ def get_loss_function(loss):
             }[loss.lower()]()
 
 
-class Hinge():
+class BaseLossFunction(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def loss(self, p, y):
+        pass
+
+    @abstractmethod
+    def dloss(self, p, y):
+        pass
+
+
+class Hinge(BaseLossFunction):
     def __init__(self, threshold=1.0):
         self.threshold = threshold
 
@@ -24,7 +40,7 @@ class Hinge():
             return 0
 
 
-class SquaredLoss():
+class SquaredLoss(BaseLossFunction):
     def loss(self, p, y):
         return .5 * (p - y) ** 2
 

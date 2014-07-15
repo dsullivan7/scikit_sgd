@@ -15,7 +15,7 @@ class BaseLearningRate(object):
 
     @abstractmethod
     def step(self, num_iter):
-        raise NotImplementedError("step needs to be implemented")
+        pass
 
 
 class Static(BaseLearningRate):

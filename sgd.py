@@ -77,9 +77,6 @@ class NewSGD():
 
         # iterate according to the number of iterations specified
         for n in range(n_iter):
-            # if n == 1 and self.avg:
-            #     total_iter = 0
-            #     avg_weights.fill(0.)  # hack to reset averaging after one epoch
 
             # iterate over each entry point in the training set
             for i in range(X.shape[0]):
@@ -87,7 +84,8 @@ class NewSGD():
 
                 # base sgd code
                 p = np.dot(X[i], weights)
-                gradient = loss_function.dloss(p, y[i]) * X[i] + alpha * weights
+                gradient = loss_function.dloss(p, y[i]) * \
+                    X[i] + alpha * weights
                 step = self.learning_rate.step(num_iter=total_iter,
                                                gradient=gradient)
                 weights += step
@@ -171,7 +169,7 @@ if __name__ == '__main__':
 
     model = NewSGD(loss,
                    learning_rate_type='exponential',
-                   eta0=.01,
+                   eta0=.001,
                    n_iter=n_iter,
                    avg=False,
                    alpha=alpha,
@@ -197,18 +195,18 @@ if __name__ == '__main__':
                            avg=False,
                            alpha=alpha,
                            callback=callback)
-    
+
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         adagrad_model.partial_fit(x_chunk, y_chunk)
 
     adadelta_model = NewSGD(loss,
-                           eta0=.1,
-                           learning_rate_type='adadelta',
-                           n_iter=n_iter,
-                           avg=False,
-                           alpha=alpha,
-                           callback=callback)
-    
+                            eta0=.1,
+                            learning_rate_type='adadelta',
+                            n_iter=n_iter,
+                            avg=False,
+                            alpha=alpha,
+                            callback=callback)
+
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         adadelta_model.partial_fit(x_chunk, y_chunk)
 
@@ -227,7 +225,9 @@ if __name__ == '__main__':
         from sklearn.linear_model import LogisticRegression
         # w_opt, pobj_opt = newton_logistic(X, y, alpha=alpha)
         loss_function = loss_functions.get_loss_function(loss)
-        lr = LogisticRegression(fit_intercept=False, tol=1e-9, C=1./(alpha * X.shape[0]))
+        lr = LogisticRegression(fit_intercept=False,
+                                tol=1e-9,
+                                C=1./(alpha * X.shape[0]))
         w_opt = lr.fit(X, y).coef_.ravel()
         pobj_opt = np.mean(map(loss_function.loss, np.dot(X, w_opt), y))
         pobj_opt += alpha * np.dot(w_opt, w_opt) / 2.

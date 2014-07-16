@@ -32,12 +32,13 @@ class Exponential(BaseLearningRate):
 
 
 class AdaGrad(BaseLearningRate):
-    def __init__(self, eta0):
+    def __init__(self, eta0, eps0=1.E-7):
         self.eta0 = eta0
         self.sum_squared_grad = 0
+        self.eps0 = eps0
 
     def step(self, gradient, num_iter=None):
-        self.sum_squared_grad += gradient ** 2
+        self.sum_squared_grad += gradient ** 2 + self.eps0
         return - (self.eta0 / np.sqrt(self.sum_squared_grad)) * gradient
 
 
@@ -50,8 +51,11 @@ class AdaDelta(BaseLearningRate):
         self.accudelta = 0
 
     def step(self, gradient, num_iter=None):
-        agrad = self.rho0 * self.accugrad + (1. - self.rho0) * gradient * gradient
-        dx = - np.sqrt((self.accudelta + self.eps0) / (agrad + self.eps0)) * gradient
-        self.accudelta = self.rho0 * self.accudelta + (1. - self.rho0) * dx * dx
+        agrad = self.rho0 * self.accugrad + \
+            (1. - self.rho0) * gradient * gradient
+        dx = - np.sqrt((self.accudelta + self.eps0) /
+                       (agrad + self.eps0)) * gradient
+        self.accudelta = self.rho0 * self.accudelta +\
+            (1. - self.rho0) * dx * dx
         self.accugrad = agrad
         return dx

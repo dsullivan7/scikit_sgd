@@ -90,7 +90,7 @@ class NewSGD():
                 gradient = loss_function.dloss(p, y[i]) * X[i] + alpha * weights
                 step = self.learning_rate.step(num_iter=total_iter,
                                                gradient=gradient)
-                weights -= step * gradient
+                weights += step
 
                 # averaged sgd
                 if self.avg:
@@ -197,9 +197,20 @@ if __name__ == '__main__':
                            avg=False,
                            alpha=alpha,
                            callback=callback)
-
+    
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         adagrad_model.partial_fit(x_chunk, y_chunk)
+
+    adadelta_model = NewSGD(loss,
+                           eta0=.1,
+                           learning_rate_type='adadelta',
+                           n_iter=n_iter,
+                           avg=False,
+                           alpha=alpha,
+                           callback=callback)
+    
+    for x_chunk, y_chunk in zip(x_chunks, y_chunks):
+        adadelta_model.partial_fit(x_chunk, y_chunk)
 
     from sag import SAG
     sag_model = SAG(loss, step_size=4., alpha=alpha, n_iter=n_iter, callback=callback)
@@ -225,6 +236,7 @@ if __name__ == '__main__':
     plt.plot(model.pobj_, label='SGD')
     plt.plot(avg_model.pobj_, label='ASGD')
     plt.plot(adagrad_model.pobj_, label='ADAGRAD')
+    plt.plot(adadelta_model.pobj_, label='ADADELTA')
     plt.plot(sag_model.pobj_, label='SAG')
     plt.axhline(pobj_opt, label='OPT', linestyle='--', color='k')
     plt.xlabel('iter')
@@ -235,6 +247,7 @@ if __name__ == '__main__':
     plt.plot(np.log10(model.pobj_ - pobj_opt), label='SGD')
     plt.plot(np.log10(avg_model.pobj_ - pobj_opt), label='ASGD')
     plt.plot(np.log10(adagrad_model.pobj_ - pobj_opt), label='ADAGRAD')
+    plt.plot(np.log10(adadelta_model.pobj_ - pobj_opt), label='ADADELTA')
     plt.plot(np.log10(sag_model.pobj_ - pobj_opt), label='SAG')
     # plt.axhline(np.log10(pobj_opt), label='OPT', linestyle='--', color='k')
     # plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')

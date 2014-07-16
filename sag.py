@@ -69,7 +69,7 @@ class SAG(BaseEstimator):
 
         # iterate according to the number of iterations specified
         for i in range(self.n_iter * n_samples):
-            j = math.floor(rng.rand(1) * n_samples)
+            j = int(math.floor(rng.rand(1) * n_samples))
 
             # compute_gradient
             new = X[j] * loss_function.dloss(np.dot(X[j], w), y[j])

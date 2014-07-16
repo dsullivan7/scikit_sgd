@@ -91,7 +91,7 @@ class SAG(BaseEstimator):
 
             w -= (scaling / n_seen) *  grad
 
-            if (i % 100) == 0:
+            if (i % 1000) == 0:
                 if self.callback:
                     pobj.append(self.callback(w, alpha))
                 else:

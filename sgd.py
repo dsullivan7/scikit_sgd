@@ -161,7 +161,7 @@ if __name__ == '__main__':
     loss = 'log'
 
     # alpha = 1.
-    alpha = 1e-2
+    alpha = 1e-5
 
     def callback(coef, alpha=0.):
         loss_function = loss_functions.get_loss_function(loss)
@@ -213,7 +213,7 @@ if __name__ == '__main__':
         adadelta_model.partial_fit(x_chunk, y_chunk)
 
     from sag import SAG
-    sag_model = SAG(loss, step_size=4., alpha=alpha, n_iter=n_iter, callback=callback)
+    sag_model = SAG(loss, alpha=alpha, n_iter=n_iter, callback=callback)
     sag_model.fit(X, y)
 
     """

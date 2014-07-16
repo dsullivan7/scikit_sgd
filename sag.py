@@ -39,11 +39,10 @@ def newton_logistic(X, y, alpha=1.):
 
 class SAG(BaseEstimator):
 
-    def __init__(self, loss, step_size=.001, n_iter=5, alpha=1., random_state=None,
+    def __init__(self, loss, n_iter=5, alpha=1., random_state=None,
                  callback=None):
         self.loss = loss
         self.n_iter = n_iter
-        self.step_size = step_size
         self.alpha = alpha
         self.random_state = random_state
         self.callback = callback
@@ -53,21 +52,29 @@ class SAG(BaseEstimator):
         y = np.asarray(y, dtype=np.float)
         alpha = self.alpha
         n_samples, n_features = X.shape
-        step_size = self.step_size
 
         rng = check_random_state(self.random_state)
         loss_function = loss_functions.get_loss_function(self.loss)
-
-        R =  np.sqrt(np.max(np.sum(X ** 2, axis=1)))
 
         # SAG
         w = np.zeros(n_features)
         grad = np.zeros(n_features)
         gradient_memory = np.zeros((n_samples, n_features))
         pobj = []
-        scaling = 1. / (R ** 2) / 4. * step_size
+
+        R =  np.max(np.sum(X ** 2, axis=1))
+
+        if self.loss.lower() == 'squaredloss':
+            scaling = 1. / (R + alpha)
+        elif self.loss.lower() == 'log':
+            scaling = 1. / (R / 4. + alpha)
+        else:
+            1/0
 
         # iterate according to the number of iterations specified
+        seen = np.zeros(n_samples, dtype=np.bool)
+        n_seen = 0
+
         for i in range(self.n_iter * n_samples):
             j = int(math.floor(rng.rand(1) * n_samples))
 
@@ -78,9 +85,13 @@ class SAG(BaseEstimator):
             grad += new - gradient_memory[j]
             gradient_memory[j] = new
 
-            w -= (scaling / min(i + 1, n_samples)) *  grad
+            if not seen[j]:
+                seen[j] = True
+                n_seen += 1
 
-            if (i % 1000) == 0:
+            w -= (scaling / n_seen) *  grad
+
+            if (i % 100) == 0:
                 if self.callback:
                     pobj.append(self.callback(w, alpha))
                 else:
@@ -114,9 +125,9 @@ if __name__ == '__main__':
     # alpha = .1
     alpha = 1.
 
-    loss, step_size = 'squaredloss', 1.
-    # loss, step_size = 'log', 4.
-    sag = SAG(loss=loss, step_size=step_size, n_iter=30, alpha=alpha, random_state=42)
+    loss = 'squaredloss'
+    # loss = 'log'
+    sag = SAG(loss=loss, n_iter=60, alpha=alpha, random_state=42)
     sag.fit(X, y)
 
     if loss == 'squaredloss':
@@ -136,7 +147,7 @@ if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
     plt.close('all')
-    plt.plot(np.log(sag.pobj_ - pobj_opt), 'r')
+    plt.plot(np.log10(sag.pobj_ - pobj_opt), 'r')
     plt.xlabel('Iterations')
     plt.ylabel('Primal')
     plt.show()

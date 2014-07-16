@@ -115,7 +115,7 @@ class NewSGD():
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    n_iter = 500
+    n_iter = 1000
 
     """
     rng = np.random.RandomState(42)
@@ -163,8 +163,10 @@ if __name__ == '__main__':
 
     def callback(coef, alpha=0.):
         loss_function = loss_functions.get_loss_function(loss)
-        pobj = np.mean(map(loss_function.loss, np.dot(X, coef), y))
-        pobj += alpha * np.dot(coef, coef) / 2.
+        pobj = np.mean(map(loss_function.loss,
+                           np.dot(X, coef) +
+                           (alpha * np.dot(coef, coef) / 2.),
+                           y))
         return pobj
 
     model = NewSGD(loss,
@@ -229,8 +231,9 @@ if __name__ == '__main__':
                                 tol=1e-9,
                                 C=1./(alpha * X.shape[0]))
         w_opt = lr.fit(X, y).coef_.ravel()
-        pobj_opt = np.mean(map(loss_function.loss, np.dot(X, w_opt), y))
-        pobj_opt += alpha * np.dot(w_opt, w_opt) / 2.
+        pred = np.dot(X, w_opt)
+        pred += alpha * np.dot(w_opt, w_opt) / 2.
+        pobj_opt = np.mean(map(loss_function.loss, pred, y))
 
     plt.close('all')
     plt.plot(model.pobj_, label='SGD')
@@ -244,12 +247,12 @@ if __name__ == '__main__':
     plt.legend()
 
     plt.figure()
-    plt.plot(np.log10(model.pobj_ - pobj_opt), label='SGD')
-    plt.plot(np.log10(avg_model.pobj_ - pobj_opt), label='ASGD')
-    plt.plot(np.log10(adagrad_model.pobj_ - pobj_opt), label='ADAGRAD')
-    plt.plot(np.log10(adadelta_model.pobj_ - pobj_opt), label='ADADELTA')
-    plt.plot(np.log10(sag_model.pobj_ - pobj_opt), label='SAG')
-    # plt.axhline(np.log10(pobj_opt), label='OPT', linestyle='--', color='k')
+    plt.plot(np.log10(model.pobj_), label='SGD')
+    plt.plot(np.log10(avg_model.pobj_), label='ASGD')
+    plt.plot(np.log10(adagrad_model.pobj_), label='ADAGRAD')
+    plt.plot(np.log10(adadelta_model.pobj_), label='ADADELTA')
+    plt.plot(np.log10(sag_model.pobj_), label='SAG')
+    plt.axhline(np.log10(pobj_opt), label='OPT', linestyle='--', color='k')
     # plt.plot(np.log10(npinto_model.pobj_), label='NPINTO')
     plt.xlabel('iter')
     plt.ylabel('cost')

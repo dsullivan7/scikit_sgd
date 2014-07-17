@@ -89,7 +89,6 @@ class NewSGD():
                 step = self.learning_rate.step(num_iter=total_iter,
                                                gradient=gradient)
                 weights += step
-
                 # averaged sgd
                 if self.avg:
                     avg_weights *= total_iter - 1
@@ -116,7 +115,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import sgd_jit
 
-    n_iter = 2
+    n_iter = 1
 
     """
     rng = np.random.RandomState(42)
@@ -184,18 +183,24 @@ if __name__ == '__main__':
                             y)))
         return pobj
 
+    import time
     model = NewSGD(loss,
-                   learning_rate_type='exponential',
+                   learning_rate_type='static',
                    eta0=.1,
                    n_iter=n_iter,
                    avg=False,
                    alpha=alpha,
                    callback=callback)
+    time1 = time.time()
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         model.partial_fit(x_chunk, y_chunk)
+    time2 = time.time()
+    print("the module without numba took: "
+          + str(time2 - time1) + " milliseconds")
 
+    time1 = time.time()
     jit_model = sgd_jit.JitSGD(loss,
-                               learning_rate_type='exponential',
+                               learning_rate_type='static',
                                eta0=.1,
                                n_iter=n_iter,
                                avg=False,
@@ -203,6 +208,9 @@ if __name__ == '__main__':
                                callback=callback)
     for x_chunk, y_chunk in zip(x_chunks, y_chunks):
         jit_model.partial_fit(x_chunk, y_chunk)
+    time2 = time.time()
+    print("the module with numba took: "
+          + str(time2 - time1) + " milliseconds")
 
     """
     avg_model = NewSGD(loss,
@@ -261,6 +269,15 @@ if __name__ == '__main__':
         pred += alpha * np.dot(w_opt, w_opt) / 2.
         pobj_opt = np.mean(map(loss_function.loss, pred, y))
 
+    w_jit = jit_model.coef_.ravel()
+    pred1 = np.dot(X, w_jit)
+    jit = np.mean(list(map(loss_function.loss, pred1, y)))
+    print("jit: " + str(jit))
+
+    w_reg = model.coef_.ravel()
+    pred2 = np.dot(X, w_reg)
+    reg = np.mean(list(map(loss_function.loss, pred2, y)))
+    print("reg: " + str(reg))
     """
     from sklearn.linear_model import SGDClassifier
     clf = SGDClassifier(n_iter=n_iter, alpha=alpha, eta0=.01)
@@ -283,8 +300,8 @@ if __name__ == '__main__':
 
     # plt.figure()
     # print(zip(np.sign(np.dot(X, adagrad_model.coef_)), y))
-    plt.plot(np.log10(model.pobj_), label='SGD')
-    plt.plot(np.log10(jit_model.pobj_), label='JIT')
+    plt.plot(model.pobj_, label='SGD')
+    plt.axhline(jit, label='JIT', linestyle='--', color='k')
     # plt.plot(np.log10(avg_model.pobj_), label='ASGD')
     # plt.plot(np.log10(adagrad_model.pobj_), label='ADAGRAD')
     # plt.plot(np.log10(adadelta_model.pobj_), label='ADADELTA')
@@ -294,4 +311,4 @@ if __name__ == '__main__':
     plt.xlabel('iter')
     plt.ylabel('cost')
     plt.legend()
-    plt.show()
+    # plt.show()

@@ -1,5 +1,4 @@
 import numpy as np
-import loss_functions
 import learning_rates
 from numba import jit
 
@@ -54,7 +53,6 @@ class JitSGD():
 
         return self._partial_fit(X, y, loss, eta0, learning_rate, n_iter)
 
-    @jit
     def _partial_fit(self, X, y, loss, eta0, learning_rate, n_iter):
         # set all class variables
         if not hasattr(self, "pobj_"):
@@ -68,48 +66,22 @@ class JitSGD():
 
         # initialize components needed for weight calculation
         weights = np.copy(self.coef_)
-        loss_function = loss_functions.get_loss_function(loss)
-        total_iter = self.total_iter_
-        pobj = []  # stores total loss for each iteration
-        alpha = self.alpha
+        self.coef_ = self._partial_fit_iterate(X, y, weights, n_iter, eta0)
+        return self
 
-        # components for asgd
-        if self.avg:
-            avg_weights = self.coef_avg_
-
+    @jit
+    def _partial_fit_iterate(X, y, weights, n_iter, learning_rate):
         # iterate according to the number of iterations specified
         for n in range(n_iter):
-
             # iterate over each entry point in the training set
             for i in range(X.shape[0]):
-                total_iter += 1
-
-                # base sgd code
                 p = np.dot(X[i], weights)
-                gradient = loss_function.dloss(p, y[i]) * \
-                    X[i] + alpha * weights
-                step = self.learning_rate.step(num_iter=total_iter,
-                                               gradient=gradient)
-                weights += step
+                z = p * y[i]
+                step = 0
+                if z <= 1.0:
+                    step = -y[i]
+                gradient = step * X[i]
+                update = -learning_rate * gradient
+                weights += update
 
-                # averaged sgd
-                if self.avg:
-                    avg_weights *= total_iter - 1
-                    avg_weights += weights
-                    avg_weights /= total_iter
-
-                # loss calculation
-                if total_iter % 1 == 0:
-                    if self.avg:
-                        pobj.append(self.callback(avg_weights, alpha))
-                    else:
-                        pobj.append(self.callback(weights, alpha))
-
-        # set the corresponding private values
-        self.total_iter_ = total_iter
-        self.pobj_ += pobj
-        self.coef_ = weights
-        if self.avg:
-            self.coef_avg_ = avg_weights
-
-        return self
+        return weights

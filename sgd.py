@@ -196,7 +196,7 @@ if __name__ == '__main__':
         model.partial_fit(x_chunk, y_chunk)
     time2 = time.time()
     print("the module without numba took: "
-          + str(time2 - time1) + " milliseconds")
+          + str(time2 - time1) + " seconds")
 
     time1 = time.time()
     jit_model = sgd_jit.JitSGD(loss,
@@ -210,7 +210,7 @@ if __name__ == '__main__':
         jit_model.partial_fit(x_chunk, y_chunk)
     time2 = time.time()
     print("the module with numba took: "
-          + str(time2 - time1) + " milliseconds")
+          + str(time2 - time1) + " seconds")
 
     """
     avg_model = NewSGD(loss,

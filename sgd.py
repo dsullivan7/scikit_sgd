@@ -1,6 +1,7 @@
 import numpy as np
-import loss_functions
-import learning_rates
+import loss_functions_slow
+import learning_rates_slow
+import sgd_opt
 
 # remove after debugging
 # import pdb
@@ -21,25 +22,25 @@ class NewSGD():
         self.eta0 = eta0
         self.avg = avg
         self.learning_rate = \
-            learning_rates.get_learning_rate(learning_rate_type, eta0)
+            learning_rates_slow.get_learning_rate(learning_rate_type, eta0)
         self.callback = callback
         self.alpha = alpha
 
     def fit(self, X, y):
-        return self._fit(X,
-                         y,
-                         self.loss,
-                         self.eta0,
-                         self.learning_rate,
-                         self.n_iter)
+        self.coef_ = self._fit(X,
+                               y,
+                               self.loss,
+                               self.eta0,
+                               self.learning_rate,
+                               self.n_iter)
+        return self
 
     def partial_fit(self, X, y):
-        return self._partial_fit(X,
-                                 y,
-                                 self.loss,
-                                 self.eta0,
-                                 self.learning_rate,
-                                 self.n_iter)
+        self.coef_ = sgd_opt.partial_fit(X,
+                                         y,
+                                         n_iter,
+                                         self.eta0)
+        return self
 
     def _fit(self, X, y, loss, eta0, learning_rate, n_iter):
         # initialize components needed for weight calculation
@@ -51,7 +52,8 @@ class NewSGD():
         if self.avg:
             self.coef_avg_ = np.zeros(X.shape[1])
 
-        return self._partial_fit(X, y, loss, eta0, learning_rate, n_iter)
+        return sgd_opt.partial_fit(X, y, n_iter, eta0)
+        # return self._partial_fit(X, y, loss, eta0, learning_rate, n_iter)
 
     def _partial_fit(self, X, y, loss, eta0, learning_rate, n_iter):
         # set all class variables
@@ -66,7 +68,7 @@ class NewSGD():
 
         # initialize components needed for weight calculation
         weights = np.copy(self.coef_)
-        loss_function = loss_functions.get_loss_function(loss)
+        loss_function = loss_functions_slow.get_loss_function(loss)
         total_iter = self.total_iter_
         pobj = []  # stores total loss for each iteration
         alpha = self.alpha
@@ -176,7 +178,7 @@ if __name__ == '__main__':
     # alpha = 1e-5
 
     def callback(coef, alpha=0.):
-        loss_function = loss_functions.get_loss_function(loss)
+        loss_function = loss_functions_slow.get_loss_function(loss)
         pobj = np.mean(list(map(loss_function.loss,
                             np.dot(X, coef) +
                             (alpha * np.dot(coef, coef) / 2.),
@@ -256,7 +258,7 @@ if __name__ == '__main__':
                                               n_iterations=iterations)
     """
     # npinto_model.fit(np.array(X), np.array(y))
-    loss_function = loss_functions.get_loss_function(loss)
+    loss_function = loss_functions_slow.get_loss_function(loss)
 
     if loss == 'log':
         from sklearn.linear_model import LogisticRegression

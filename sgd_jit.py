@@ -1,5 +1,5 @@
 import numpy as np
-import learning_rates
+import learning_rates_slow
 from numba import jit
 
 # remove after debugging
@@ -21,7 +21,7 @@ class JitSGD():
         self.eta0 = eta0
         self.avg = avg
         self.learning_rate = \
-            learning_rates.get_learning_rate(learning_rate_type, eta0)
+            learning_rates_slow.get_learning_rate(learning_rate_type, eta0)
         self.callback = callback
         self.alpha = alpha
 

@@ -27,19 +27,31 @@ class NewSGD():
         self.alpha = alpha
 
     def fit(self, X, y):
-        self.coef_ = self._fit(X,
-                               y,
-                               self.loss,
-                               self.eta0,
-                               self.learning_rate,
-                               self.n_iter)
+        self._fit(X,
+                  y,
+                  self.coef_,
+                  self.loss,
+                  self.eta0,
+                  self.learning_rate,
+                  self.n_iter)
         return self
 
     def partial_fit(self, X, y):
-        self.coef_ = sgd_opt.partial_fit(X,
-                                         y,
-                                         n_iter,
-                                         self.eta0)
+        # set all class variables
+        if not hasattr(self, "pobj_"):
+            self.pobj_ = []
+        if not hasattr(self, "coef_"):
+            self.coef_ = np.zeros(X.shape[1])
+        if not hasattr(self, "coef_avg_") and self.avg:
+            self.coef_avg_ = np.zeros(X.shape[1])
+        if not hasattr(self, "total_iter_"):
+            self.total_iter_ = 0
+
+        sgd_opt.partial_fit(X,
+                            y,
+                            self.coef_,
+                            n_iter,
+                            self.eta0)
         return self
 
     def _fit(self, X, y, loss, eta0, learning_rate, n_iter):
@@ -148,8 +160,8 @@ if __name__ == '__main__':
     from sklearn import datasets
 
     digits = datasets.load_digits()
-    X = digits.data
-    y = digits.target
+    X = np.array(digits.data, dtype=np.float64)
+    y = np.array(digits.target, dtype=np.float64)
 
     # X = X[y < 2]
     # y = y[y < 2]

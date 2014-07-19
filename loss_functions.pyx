@@ -1,34 +1,23 @@
-from abc import ABCMeta, abstractmethod
-
-def get_loss_function(loss):
-    return {"hinge": Hinge,
-            }[loss.lower()]()
-
-class BaseLossFunction(object):
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def loss(self, p, y):
+cdef class BaseLossFunction:
+    cdef float loss(self, float p, float y):
+        pass
+    cdef float dloss(self, float p, float y):
         pass
 
-    @abstractmethod
-    def dloss(self, p, y):
-        pass
+cdef class Hinge(BaseLossFunction):
 
-
-class Hinge(BaseLossFunction):
-    def __init__(self, threshold=1.0):
+    def __cinit__(self, float threshold):
         self.threshold = threshold
 
-    def loss(self, p, y):
-        z = p * y
+    cdef float loss(self, float p, float y):
+        cdef float z = p * y
         if z <= self.threshold:
             return self.threshold - z
         else:
             return 0
 
-    def dloss(self, p, y):
-        z = p * y
+    cdef float dloss(self, float p, float y):
+        cdef float z = p * y
         if z <= self.threshold:
             return -y
         else:

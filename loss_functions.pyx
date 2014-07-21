@@ -6,7 +6,7 @@ cdef class BaseLossFunction:
 
 cdef class Hinge(BaseLossFunction):
 
-    def __cinit__(self, float threshold):
+    cdef void set_threshold(self, float threshold):
         self.threshold = threshold
 
     cdef float loss(self, float p, float y):

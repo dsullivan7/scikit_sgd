@@ -1,7 +1,13 @@
 cimport loss_functions
-import loss_functions
+import numpy as np
 cimport numpy as np
 
+# import cblas module
+# TODO: figure out if this needs to be included somewhere in the setup.py
+cdef extern from "cblas.h":
+    double ddot (int N, double* X, int incX, double* Y, int incY)
+
+# the entry point from python into the cython
 def partial_fit(np.ndarray[double, ndim=2, mode="c"] X, np.ndarray[double, ndim=1, mode="c"]  y, np.ndarray[double, ndim=1, mode="c"]  weights, int n_iter, double eta0):
     _partial_fit(&X[0, 0], &y[0], &weights[0], n_iter, eta0, X.shape[0], X.shape[1])
 
@@ -14,6 +20,7 @@ cdef void _partial_fit(double* X, double* y, double* weights, int n_iter, double
     cdef double gradient
 
     cdef loss_functions.Hinge loss_function = loss_functions.get_loss_function()
+    loss_function.set_threshold(1.0)
     # iterate over a constant n which is the number of times
     # for iterating over the total number of samples
     for n in range(n_iter):
@@ -24,8 +31,7 @@ cdef void _partial_fit(double* X, double* y, double* weights, int n_iter, double
 
             # compute the dot product of the weights and the current sample
             p = 0
-            for j in range(n_features):
-                p = p + weights[j] * X[total_iter + j]
+            p = p + ddot(n_features, weights, 1, X + (i * n_samples), 1)
 
             # compute the gradient and update the weights
             for j in range(n_features):

@@ -64,7 +64,7 @@ class NewSGD():
         if self.avg:
             self.coef_avg_ = np.zeros(X.shape[1])
 
-        return sgd_opt.partial_fit(X, y, n_iter, eta0)
+        return sgd_opt.partial_fit(X, y, self.coef_, n_iter, eta0)
         # return self._partial_fit(X, y, loss, eta0, learning_rate, n_iter)
 
     def _partial_fit(self, X, y, loss, eta0, learning_rate, n_iter):
